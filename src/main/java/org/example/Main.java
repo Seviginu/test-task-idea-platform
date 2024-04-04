@@ -40,16 +40,16 @@ class Forecast {
     private final int MAX_WIND = 30;
     private final int MIN_VISIBILITY = 200;
 
-    Map<Integer, FlightStatus> isAvailable = new HashMap<>();
+    Map<Integer, FlightStatus> timeToStatus = new HashMap<>();
 
     public void addForecast(int time, int wind, int visibility) {
-        isAvailable.put(time, wind <= MAX_WIND && visibility >= MIN_VISIBILITY
+        timeToStatus.put(time, wind <= MAX_WIND && visibility >= MIN_VISIBILITY
                 ? FlightStatus.SCHEDULED
                 : FlightStatus.CANCELED);
     }
 
     public FlightStatus getStatus(int time) {
-        return isAvailable.get(time);
+        return timeToStatus.get(time);
     }
 }
 
