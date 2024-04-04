@@ -53,6 +53,19 @@ class Forecast {
     }
 }
 
+class TimeZoneConverter {
+    Map<String, Integer> cityToUTC = new HashMap<>();
+
+    public int getDifference(String city1, String city2) {
+        return cityToUTC.getOrDefault(city1, 0) -
+                cityToUTC.getOrDefault(city2, 0);
+    }
+
+    public void addCity(String city, int timeZoneUTC) {
+        cityToUTC.put(city, timeZoneUTC);
+    }
+}
+
 class FlightsAndForecast {
     List<Flight> flights;
     Map<String, Forecast> forecast;
@@ -92,12 +105,14 @@ class ForecastAdapter extends TypeAdapter<Forecast> {
 public class Main {
     static final String FILENAME = "flights_and_forecast.json";
 
-    private static void printAll(FlightsAndForecast instance) {
+    private static void printAll(FlightsAndForecast instance, TimeZoneConverter converter) {
         for (var flight : instance.flights) {
             int depTime = flight.departure;
-            int arriveTime = flight.departure + flight.duration;
+            int offset = converter.getDifference(flight.to, flight.from);
+            int arriveTime = flight.departure + flight.duration + offset;
             Forecast forecastDep = instance.forecast.get(flight.from);
             Forecast forecastArrive = instance.forecast.get(flight.to);
+
             boolean canFly = forecastDep.getStatus(depTime) == FlightStatus.SCHEDULED &&
                     forecastArrive.getStatus(arriveTime) == FlightStatus.SCHEDULED;
             String message = canFly ? FlightStatus.SCHEDULED.toString() : FlightStatus.CANCELED.toString();
@@ -106,13 +121,22 @@ public class Main {
         }
     }
 
+    private static void registerAllCities(TimeZoneConverter converter) {
+        converter.addCity("moscow", 3);
+        converter.addCity("novosibirsk", 7);
+        converter.addCity("omsk", 6);
+    }
+
     public static void main(String[] args) {
+        TimeZoneConverter converter = new TimeZoneConverter();
+        registerAllCities(converter);
+
         try (BufferedReader reader = new BufferedReader(new InputStreamReader(new FileInputStream(FILENAME)))) {
             Gson gson = new GsonBuilder()
                     .registerTypeAdapter(Forecast.class, new ForecastAdapter())
                     .create();
             FlightsAndForecast instance = gson.fromJson(reader, FlightsAndForecast.class);
-            printAll(instance);
+            printAll(instance, converter);
         } catch (FileNotFoundException e) {
             System.out.println("Файл не найден");
         } catch (IOException e) {
